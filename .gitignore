@@ -1,0 +1,87 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual Environment (conda)
+dsi/
+.conda/
+*.conda
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Dataset (too large for GitHub)
+data/train/
+data/test/
+data/predictions/
+*.jpg
+*.jpeg
+*.png
+*.gif
+
+# Model files (too large for GitHub)
+outputs/models/*.keras
+outputs/models/*.h5
+outputs/models/*.pb
+
+# Training outputs
+outputs/logs/
+outputs/figures/
+*.log
+
+# TensorFlow
+*.ckpt
+*.ckpt.*
+checkpoint
+
+# System files
+.DS_Store
+Thumbs.db
+*.bak
+
+# Docker
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# LaTeX auxiliary files
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+
+# Keep important files
+!outputs/models/.gitkeep
+!outputs/figures/.gitkeep
+!outputs/logs/.gitkeep
+!data/train/.gitkeep
+!data/test/.gitkeep
+!data/predictions/.gitkeep
+
+RUN.md
+FINAL_PROJECT_FILES.md

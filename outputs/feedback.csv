@@ -1,0 +1,8 @@
+id,timestamp,model,predicted,true_class,confidence
+0e4849fd,2026-01-08T12:10:16.056877,baseline_20260108_113113.keras,buildings,mountain,0.2869
+1bbc8ebb,2026-01-08T12:12:50.225734,baseline_model.keras,mountain,sea,0.3837
+41dbe4c7,2026-01-08T12:24:17.139099,baseline_20260108_113113.keras,buildings,mountain,0.2869
+ebdd8a78,2026-01-08T12:24:58.269797,baseline_model.keras,mountain,sea,0.3837
+84f88ce9,2026-01-08T13:37:13.434251,regularized_20260108_131141.keras,mountain,sea,0.4302
+963fe84d,2026-01-08T14:15:33.336042,baseline_20260108_113113.keras,buildings,mountain,0.2869
+effa9d3e,2026-01-08T14:16:57.120742,baseline_model.keras,mountain,mountain,0.3837
