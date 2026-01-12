@@ -74,6 +74,8 @@ temp/
 *.synctex.gz
 *.fdb_latexmk
 *.fls
+*.pdf
+*.tex
 
 # Keep important files
 !outputs/models/.gitkeep
