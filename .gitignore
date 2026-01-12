@@ -74,8 +74,10 @@ temp/
 *.synctex.gz
 *.fdb_latexmk
 *.fls
-*.pdf
-*.tex
+
+# Presentation files (keep locally, exclude from GitHub)
+presentation.pdf
+presentation.tex
 
 # Keep important files
 !outputs/models/.gitkeep
