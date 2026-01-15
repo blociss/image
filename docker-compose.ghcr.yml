@@ -1,0 +1,39 @@
+# Docker Compose for GHCR images (no build required)
+# Usage: docker compose -f docker-compose.ghcr.yml up
+
+services:
+  api:
+    image: ghcr.io/blociss/image-classification-api:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./outputs:/app/outputs
+      - ${DATASET_PATH:-./data}:/app/data
+    environment:
+      - HOME=/tmp
+      - XDG_CONFIG_HOME=/tmp
+      - MPLCONFIGDIR=/tmp
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  streamlit:
+    image: ghcr.io/blociss/image-classification-streamlit:latest
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./outputs:/app/outputs
+      - ${DATASET_PATH:-./data}:/app/data
+    environment:
+      - API_URL=http://api:8000
+      - HOME=/tmp
+      - XDG_CONFIG_HOME=/tmp
+      - MPLCONFIGDIR=/tmp
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    command: ["streamlit", "run", "streamlit/app.py", "--server.address", "0.0.0.0"]

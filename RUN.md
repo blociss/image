@@ -24,7 +24,7 @@ Ensures containers can write to `outputs/feedback.csv`. Without it, you get perm
 echo "HOST_UID=$(id -u)" >> .env
 echo "HOST_GID=$(id -g)" >> .env
 ```
-
+ 
 Then just: `docker compose up --build`
 
 ### Custom Dataset Path

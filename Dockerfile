@@ -17,12 +17,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-# Create outputs directory (will be populated at runtime or via volume mount)
-RUN mkdir -p outputs/models outputs/figures outputs/logs
-
-RUN useradd --create-home --uid 10001 appuser \
-    && chown -R appuser:appuser /app
-USER appuser
+# Create outputs directory with open permissions (allows any user to write feedback.csv)
+RUN mkdir -p outputs/models outputs/figures outputs/logs \
+    && chmod -R 777 outputs
 
 # Copy project files
 COPY src/ ./src/
@@ -30,7 +27,7 @@ COPY api/ ./api/
 COPY streamlit/ ./streamlit/
 COPY scripts/ ./scripts/
 
-# Expose ports
+# Expose ports 
 EXPOSE 8000 8501
 
 # Default command: start API
