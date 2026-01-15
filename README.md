@@ -63,6 +63,9 @@ Then just run: `docker compose up --build`
 ## Run Locally (No Docker)
 
 ```bash
+# Install dependencies
+pip install -r requirements.txt
+
 # Terminal 1: API
 uvicorn api.main:app --port 8000
 
@@ -99,6 +102,7 @@ In local mode, use any absolute path in Settings (e.g., `/home/user/datasets/tra
 - [RUN.md](RUN.md) - Detailed run instructions & training
 - [DATASET_SETUP.md](DATASET_SETUP.md) - Dataset configuration
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues
+- [requirements.txt](requirements.txt) - Python dependencies
 
 ## Technologies
 

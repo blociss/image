@@ -86,6 +86,7 @@ presentation.tex
 !data/train/.gitkeep
 !data/test/.gitkeep
 !data/predictions/.gitkeep
+!screenshots/*.png
 
 FINAL_PROJECT_FILES.md
 
