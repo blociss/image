@@ -1,46 +1,47 @@
 # How to Run
 
-## Docker (Recommended)
+## Choose Your Mode
+
+### 1️⃣ GitHub Container Registry (Easiest)
+Pre-built images, no Docker build required.
+
+### 2️⃣ Local Development (No Docker)
+Run directly on your machine.
+
+### 3️⃣ Docker Build (Developers)
+Build images locally from source.
+
+---
+
+## 1️⃣ GitHub Container Registry
 
 ```bash
-# Start (with permission fix)
-HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build
+# Quick start
+./deploy.sh run
 
 # Access
 # Streamlit: http://localhost:8501
 # API docs:  http://localhost:8000/docs
 
 # Stop
-docker compose down
+docker compose -f docker-compose.ghcr.yml down
 ```
 
-### Why HOST_UID/HOST_GID?
-
-Ensures containers can write to `outputs/feedback.csv`. Without it, you get permission errors.
-
-### Use .env File (optional)
-
+**Custom dataset path:**
 ```bash
-echo "HOST_UID=$(id -u)" >> .env
-echo "HOST_GID=$(id -g)" >> .env
-```
- 
-Then just: `docker compose up --build`
-
-### Custom Dataset Path
-
-```bash
-HOST_UID=$(id -u) HOST_GID=$(id -g) DATASET_PATH=/path/to/dataset docker compose up --build
+DATASET_PATH=/path/to/dataset ./deploy.sh run
 ```
 
-In Streamlit Settings: `/app/data/train` and `/app/data/test`
+**Streamlit settings:**
+- Train path: `/app/data/train`
+- Test path: `/app/data/test`
 
 ---
 
-## Local (No Docker)
+## 2️⃣ Local Development
 
 ```bash
-# Install
+# Install dependencies
 pip install -r requirements.txt
 
 # Terminal 1: API
@@ -50,46 +51,74 @@ uvicorn api.main:app --port 8000
 API_URL=http://localhost:8000 streamlit run streamlit/app.py
 ```
 
-In local mode, use any path in Settings (e.g., `/home/user/datasets/train`).
+**Streamlit settings:**
+- Train path: `/home/user/datasets/train`
+- Test path: `/home/user/datasets/test`
 
 ---
 
-## Train Models
+## 3️⃣ Docker Build (Developers)
 
 ```bash
-python scripts/train_pipeline.py
-```
-
-Options:
-- `--speed-mode` - Quick test
-- `--baseline-only` / `--regularized-only` / `--tl-only` - Train single model
-
-Models saved to `outputs/models/`.
-
----
-
-## Troubleshooting
-
-**Permission denied on feedback.csv:**
-```bash
-sudo chown -R $(id -u):$(id -g) outputs
+# Start with permissions
 HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build
+
+# Stop
+docker compose down
 ```
 
-**Port in use:**
+**Why HOST_UID/HOST_GID?**
+Fixes permission errors for `outputs/feedback.csv`.
+
+**Custom dataset path:**
 ```bash
+HOST_UID=$(id -u) HOST_GID=$(id -g) DATASET_PATH=/path/to/dataset docker compose up --build
+```
+
+---
+
+## Model Training
+
+```bash
+# Quick test (all modes)
+docker compose exec api python scripts/train_pipeline.py --speed-mode
+# or
+python scripts/train_pipeline.py --speed-mode
+
+# Full training
+python scripts/train_pipeline.py
+
+# Single model
+python scripts/train_pipeline.py --baseline-only
+python scripts/train_pipeline.py --regularized-only
+python scripts/train_pipeline.py --tl-only
+```
+
+**Training times:**
+- Baseline: ~5 min
+- Regularized: ~8 min
+- Transfer Learning: ~15 min
+
+---
+
+## Common Commands
+
+```bash
+# Check containers
+docker compose ps
+
+# View logs
+docker compose logs -f
+
+# Enter container
+docker compose exec api bash
+
+# Restart
+docker compose restart
+
+# Kill ports
 lsof -ti:8000 | xargs kill -9
 lsof -ti:8501 | xargs kill -9
 ```
 
-**Rebuild:**
-```bash
-docker compose down
-docker compose build --no-cache
-docker compose up
-```
-
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for more.
-
-
-
+For detailed troubleshooting, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
