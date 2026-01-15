@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 import plotly.express as px
 import pandas as pd
+import base64
 
 # Paths
 STREAMLIT_DIR = Path(__file__).parent.parent.resolve()
@@ -152,6 +153,13 @@ def create_probability_chart(predictions):
     return fig
 
 
+def _rerun():
+    if hasattr(st, "rerun"):
+        st.rerun()
+    else:
+        st.experimental_rerun()
+
+
 # -----------------------------------------------------------------------------
 # SESSION STATE
 # -----------------------------------------------------------------------------
@@ -159,6 +167,14 @@ if "prediction_result" not in st.session_state:
     st.session_state.prediction_result = None
 if "uploaded_image" not in st.session_state:
     st.session_state.uploaded_image = None
+if "gradcam_result" not in st.session_state:
+    st.session_state.gradcam_result = None
+if "feedback_submitted" not in st.session_state:
+    st.session_state.feedback_submitted = False
+if "feedback_error" not in st.session_state:
+    st.session_state.feedback_error = None
+if "show_class_selector" not in st.session_state:
+    st.session_state.show_class_selector = False
 
 # -----------------------------------------------------------------------------
 # SIDEBAR
@@ -234,6 +250,7 @@ with col_upload:
                         img_bytes = img_byte_arr.getvalue()
                         
                         files = {"file": ("image.jpg", img_bytes, "image/jpeg")}
+                        # Get prediction
                         response = requests.post(
                             f"{API_URL}/predict/{selected_model}",
                             files=files,
@@ -242,7 +259,21 @@ with col_upload:
                         response.raise_for_status()
                         st.session_state.prediction_result = response.json()
                         st.session_state.uploaded_image = image
-                        st.rerun()
+                        
+                        # Get Grad-CAM visualization
+                        img_byte_arr.seek(0)  # Reset buffer
+                        files_gradcam = {"file": ("image.jpg", img_byte_arr.getvalue(), "image/jpeg")}
+                        gradcam_response = requests.post(
+                            f"{API_URL}/gradcam/{selected_model}",
+                            files=files_gradcam,
+                            timeout=30
+                        )
+                        if gradcam_response.status_code == 200:
+                            st.session_state.gradcam_result = gradcam_response.json()
+                        else:
+                            st.session_state.gradcam_result = None
+
+                        _rerun()
                     except requests.exceptions.ConnectionError:
                         st.error("❌ Cannot connect to API. Make sure it's running on port 8000.")
                     except Exception as e:
@@ -317,19 +348,43 @@ with col_results:
             fig = create_probability_chart(result['all_predictions'])
             st.plotly_chart(fig, use_container_width=True)
         
+        # Grad-CAM visualization
+        if 'gradcam_result' in st.session_state and st.session_state.gradcam_result:
+            st.markdown("---")
+            st.markdown("### 🔥 Grad-CAM Visualization")
+            st.markdown("*Shows what the model focuses on when making predictions*")
+            
+            try:
+                gradcam_data = st.session_state.gradcam_result
+                img_data = base64.b64decode(gradcam_data['gradcam_image'])
+                gradcam_img = Image.open(io.BytesIO(img_data))
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.markdown("**Original Image**")
+                    st.image(st.session_state.uploaded_image, use_container_width=True)
+                with col2:
+                    st.markdown("**Grad-CAM Heatmap**")
+                    st.image(gradcam_img, use_container_width=True)
+                
+                st.info("💡 Red/yellow areas show regions the model considers important for classification.")
+            except Exception as e:
+                st.warning(f"Could not display Grad-CAM: {str(e)}")
+        
         # Feedback section
         st.markdown("---")
         st.markdown("### 💬 Provide Feedback")
-        
-        if "feedback_submitted" not in st.session_state:
-            st.session_state.feedback_submitted = False
-        
+
         if st.session_state.feedback_submitted:
             st.success("✅ Thank you! Your feedback has been recorded.")
             if st.button("Submit another feedback"):
                 st.session_state.feedback_submitted = False
-                st.rerun()
+                st.session_state.feedback_error = None
+                _rerun()
         else:
+            if st.session_state.feedback_error:
+                st.error(st.session_state.feedback_error)
+
             st.markdown("Was the prediction correct?")
             
             # Quick buttons row
@@ -346,15 +401,21 @@ with col_results:
                         }
                         resp = requests.post(f"{API_URL}/feedback", json=feedback_data, timeout=5)
                         if resp.status_code == 200:
+                            st.session_state.feedback_error = None
                             st.session_state.feedback_submitted = True
-                            st.rerun()
+                            st.cache_data.clear()
+                            _rerun()
+                        else:
+                            st.session_state.feedback_error = f"Feedback not saved ({resp.status_code}): {resp.text}"
+                            _rerun()
                     except Exception as e:
-                        st.error(f"Error: {e}")
+                        st.session_state.feedback_error = f"Feedback error: {e}"
+                        _rerun()
             
             with col2:
                 if st.button("❌ Wrong", use_container_width=True):
                     st.session_state.show_class_selector = True
-                    st.rerun()
+                    _rerun()
             
             # Show class selector if user clicked "Wrong"
             if st.session_state.get("show_class_selector", False):
@@ -381,11 +442,17 @@ with col_results:
                             }
                             resp = requests.post(f"{API_URL}/feedback", json=feedback_data, timeout=5)
                             if resp.status_code == 200:
+                                st.session_state.feedback_error = None
                                 st.session_state.feedback_submitted = True
                                 st.session_state.show_class_selector = False
-                                st.rerun()
+                                st.cache_data.clear()
+                                _rerun()
+                            else:
+                                st.session_state.feedback_error = f"Feedback not saved ({resp.status_code}): {resp.text}"
+                                _rerun()
                         except Exception as e:
-                            st.error(f"Error: {e}")
+                            st.session_state.feedback_error = f"Feedback error: {e}"
+                            _rerun()
         
         st.markdown("<br>", unsafe_allow_html=True)
         
@@ -393,9 +460,11 @@ with col_results:
         if st.button("🗑️ Clear Results", use_container_width=True):
             st.session_state.prediction_result = None
             st.session_state.uploaded_image = None
+            st.session_state.gradcam_result = None
             st.session_state.feedback_submitted = False
+            st.session_state.feedback_error = None
             st.session_state.show_class_selector = False
-            st.rerun()
+            _rerun()
     else:
         st.markdown("""
         <div style="text-align:center; padding:3rem; color:#666;">

@@ -1,0 +1,55 @@
+# Docker Compose with Custom Dataset Path
+# ==========================================
+# Use this if your dataset is in a different location
+# 
+# Usage:
+#   1. Copy this file to docker-compose.yml (or use -f flag)
+#   2. Change /path/to/your/dataset to your actual dataset location
+#   3. Run: docker compose up
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./outputs:/app/outputs
+      # CHANGE THIS LINE - Put your dataset path here:
+      - /path/to/your/dataset:/app/dataset
+      # Examples:
+      # - /home/user/Downloads/intel_images:/app/dataset
+      # - /mnt/external_drive/datasets/images:/app/dataset
+      # - ~/Documents/my_dataset:/app/dataset
+    environment:
+      - TF_CPP_MIN_LOG_LEVEL=2
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=2).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./outputs:/app/outputs
+      # CHANGE THIS LINE - Same path as above:
+      - /path/to/your/dataset:/app/dataset
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - API_URL=http://api:8000
+    restart: unless-stopped
+    command: streamlit run streamlit/app.py --server.port 8501 --server.address 0.0.0.0
+
+# Then in Streamlit Settings, use:
+# Training path: /app/dataset/train
+# Test path: /app/dataset/test

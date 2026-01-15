@@ -87,5 +87,7 @@ presentation.tex
 !data/test/.gitkeep
 !data/predictions/.gitkeep
 
-RUN.md
 FINAL_PROJECT_FILES.md
+
+# Environment file (contains user-specific settings)
+.env

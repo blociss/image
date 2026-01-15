@@ -35,6 +35,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.config import MODELS_DIR, IMG_SIZE, TL_IMG_SIZE, CLASS_NAMES
+from src.utils.grad_cam import GradCAM
 
 # Logging
 logging.basicConfig(
@@ -290,6 +291,74 @@ async def unload_model(filename: str):
     raise HTTPException(status_code=404, detail=f"Model not loaded: {filename}")
 
 
+@app.post("/gradcam/{model_filename}", tags=["Prediction"])
+async def generate_gradcam(model_filename: str, file: UploadFile = File(...)):
+    """
+    Generate Grad-CAM heatmap for an image using the specified model.
+    
+    - **model_filename**: Name of the model file
+    - **file**: Image file (JPG, PNG)
+    
+    Returns the heatmap as a base64-encoded PNG image.
+    """
+    import base64
+    import cv2
+    
+    # Validate model exists
+    available = [m['filename'] for m in model_manager.get_available()]
+    if model_filename not in available:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Model '{model_filename}' not found. Available: {available}"
+        )
+    
+    try:
+        # Load model
+        model_data = model_manager.get_model(model_filename)
+        model = model_data['model']
+        img_size = model_data['img_size']
+        is_transfer = model_data['type'] == 'transfer_learning'
+        
+        # Read and preprocess image
+        contents = await file.read()
+        image = Image.open(BytesIO(contents)).convert('RGB')
+        original_image = np.array(image)
+        image = image.resize(img_size)
+        
+        if is_transfer:
+            from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+            img_array = preprocess_input(np.array(image).astype(np.float32))
+        else:
+            img_array = np.array(image) / 255.0
+        
+        # Generate Grad-CAM
+        grad_cam = GradCAM(model, img_size)
+        heatmap = grad_cam.compute_heatmap(img_array)
+        
+        # Resize heatmap to original image size
+        heatmap_resized = cv2.resize(heatmap, (original_image.shape[1], original_image.shape[0]))
+        heatmap_colored = cv2.applyColorMap(np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET)
+        heatmap_colored = cv2.cvtColor(heatmap_colored, cv2.COLOR_BGR2RGB)
+        
+        # Overlay heatmap on original image
+        overlay = cv2.addWeighted(original_image, 0.6, heatmap_colored, 0.4, 0)
+        
+        # Convert to base64
+        overlay_pil = Image.fromarray(overlay)
+        buffered = BytesIO()
+        overlay_pil.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        
+        return {
+            "gradcam_image": img_str,
+            "model_used": model_filename
+        }
+        
+    except Exception as e:
+        logger.error(f"Grad-CAM error: {e}")
+        raise HTTPException(status_code=500, detail=f"Grad-CAM generation failed: {str(e)}")
+
+
 # -----------------------------------------------------------------------------
 # FEEDBACK ENDPOINTS
 # -----------------------------------------------------------------------------
@@ -327,12 +396,14 @@ async def submit_feedback(feedback: FeedbackInput):
     - **model**: Model filename used
     - **confidence**: Prediction confidence
     """
-    ensure_feedback_file()
-    
-    feedback_id = str(uuid.uuid4())[:8]
-    timestamp = datetime.now().isoformat()
-    
     try:
+        ensure_feedback_file()
+        
+        feedback_id = str(uuid.uuid4())[:8]
+        timestamp = datetime.now().isoformat()
+        
+        logger.info(f"Saving feedback to: {FEEDBACK_FILE}")
+        
         with open(FEEDBACK_FILE, "a", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow([
@@ -344,6 +415,8 @@ async def submit_feedback(feedback: FeedbackInput):
                 feedback.confidence
             ])
         
+        logger.info(f"Feedback saved successfully: {feedback_id}")
+        
         return {
             "status": "success",
             "message": "Feedback recorded",
@@ -351,6 +424,9 @@ async def submit_feedback(feedback: FeedbackInput):
         }
     except Exception as e:
         logger.error(f"Feedback error: {e}")
+        logger.error(f"Feedback file path: {FEEDBACK_FILE}")
+        logger.error(f"Feedback file exists: {FEEDBACK_FILE.exists()}")
+        logger.error(f"Parent dir exists: {FEEDBACK_FILE.parent.exists()}")
         raise HTTPException(status_code=500, detail=f"Failed to save feedback: {str(e)}")
 
 

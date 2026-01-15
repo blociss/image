@@ -9,6 +9,7 @@ scikit-learn>=1.0.0
 
 # Image Processing
 Pillow>=9.0.0
+opencv-python>=4.5.0
 
 # Visualization
 matplotlib>=3.5.0

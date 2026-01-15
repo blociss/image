@@ -1,147 +1,105 @@
 # Image Classification Project
 
-An end-to-end image classification system for the Intel Image Classification dataset, featuring CNN models, FastAPI backend, and interactive Streamlit dashboard.
+CNN-based image classification with FastAPI backend and Streamlit dashboard.
 
-## 🎯 Overview
+## Screenshots
 
-This project classifies landscape images into 6 categories:
-- **Buildings** - Urban structures
-- **Forest** - Wooded areas
-- **Glacier** - Ice formations
-- **Mountain** - Mountain landscapes
-- **Sea** - Ocean/water scenes
-- **Street** - Urban streets
+<img src="screenshots/streamlit_home.png" alt="Streamlit Dashboard" width="500">
+<img src="screenshots/api_docs.png" alt="API Documentation" width="500">
 
-## 📦 Dataset
+## Dataset
 
-This project uses the **Intel Image Classification Dataset** from Kaggle.
+**Intel Image Classification** from Kaggle (~25,000 images, 6 classes).
 
-**Dataset Details:**
-- ~25,000 images (150x150 RGB)
-- 6 balanced classes
-- Split: ~14,000 train, ~3,000 validation, ~7,000 test
+Download: [kaggle.com/datasets/puneet6060/intel-image-classification](https://www.kaggle.com/datasets/puneet6060/intel-image-classification)
 
-**Download:**
-1. Visit [Intel Image Classification on Kaggle](https://www.kaggle.com/datasets/puneet6060/intel-image-classification)
-2. Download and extract to the `data/` folder
-3. Organize as:
-   ```
-   data/
-   ├── train/
-   │   ├── buildings/
-   │   ├── forest/
-   │   ├── glacier/
-   │   ├── mountain/
-   │   ├── sea/
-   │   └── street/
-   └── test/
-       ├── buildings/
-       ├── forest/
-       ├── glacier/
-       ├── mountain/
-       ├── sea/
-       └── street/
-   ```
-
-**Note:** The dataset is not included in this repository due to size. You must download it separately.
-
-## 🚀 Quick Start with Docker
-
-### Prerequisites
-
-- Docker and Docker Compose installed
-- No other services running on ports 8000 and 8501
-
-### Run the Application
-
-**1. Build and start the services:**
-```bash
-docker compose up --build
+Required structure:
+```
+data/
+├── train/
+│   ├── buildings/
+│   ├── forest/
+│   ├── glacier/
+│   ├── mountain/
+│   ├── sea/
+│   └── street/
+└── test/
+    └── (same classes)
 ```
 
-**2. Access the applications:**
-- **Streamlit Dashboard**: http://localhost:8501
-- **API Documentation**: http://localhost:8000/docs
+## Quick Start (Docker)
 
-**3. Stop the services:**
 ```bash
+# 1. Start services (with permission fix for feedback.csv)
+HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build
+
+# 2. Access
+# Streamlit: http://localhost:8501
+# API docs:  http://localhost:8000/docs
+
+# 3. Stop
 docker compose down
 ```
 
-### Docker Commands
+### Custom Dataset Path
 
-**Run in background (detached mode):**
 ```bash
-docker compose up -d
+HOST_UID=$(id -u) HOST_GID=$(id -g) DATASET_PATH=/path/to/dataset docker compose up --build
 ```
 
-**View logs:**
-```bash
-docker compose logs -f
+In Streamlit Settings, use: `/app/data/train` and `/app/data/test`
+
+### Using .env File (optional)
+
+Create `.env` in project root:
+```env
+HOST_UID=1001
+HOST_GID=1001
+DATASET_PATH=/home/user/datasets/intel_images
 ```
 
-**Rebuild from scratch:**
+Then just run: `docker compose up --build`
+
+## Run Locally (No Docker)
+
 ```bash
-docker compose down
-docker compose build --no-cache
-docker compose up
+# Terminal 1: API
+uvicorn api.main:app --port 8000
+
+# Terminal 2: Streamlit
+API_URL=http://localhost:8000 streamlit run streamlit/app.py
 ```
 
-**Check service status:**
-```bash
-docker compose ps
-```
+In local mode, use any absolute path in Settings (e.g., `/home/user/datasets/train`).
 
-## 🤖 Available Models
+## Models
 
-Three CNN models with different architectures:
+| Model | Accuracy |
+|-------|----------|
+| Baseline | 73% |
+| Regularized | 79% |
+| Transfer Learning (MobileNetV2) | 88% |
 
-| Model | Accuracy | Description |
-|-------|----------|-------------|
-| **Baseline** | 73% | Simple CNN baseline |
-| **Regularized** | 79% | Enhanced with regularization |
-| **Transfer Learning** | 88% | MobileNetV2 (best performance) |
+## API Endpoints
 
-## 🔌 Using the API
-
-The FastAPI backend provides automatic interactive documentation at http://localhost:8000/docs
-
-**Available endpoints:**
-- `GET /` - Health check
-- `GET /models` - List available models
-- `POST /predict/{model}` - Classify an image
+- `GET /models` - List models
+- `POST /predict/{model}` - Classify image
 - `POST /feedback` - Submit feedback
+- `GET /feedback` - Get all feedback
 
-**Models:** `baseline`, `regularized`, `transfer_learning`
+## Streamlit Pages
 
-## 📊 Streamlit Dashboard Features
+- **Home** - Upload & predict with Grad-CAM visualization
+- **Model Comparison** - Compare all models
+- **Data Analysis** - Dataset statistics
+- **Feedback Dashboard** - User feedback tracking
 
-Access the interactive dashboard at http://localhost:8501
+## Documentation
 
-**Pages:**
-- **Home** - Upload images and get predictions with confidence scores
-- **Model Comparison** - Compare all three models side-by-side
-- **Data Analysis** - View dataset statistics and samples
-- **Feedback Dashboard** - Track user feedback and accuracy
+- [RUN.md](RUN.md) - Detailed run instructions & training
+- [DATASET_SETUP.md](DATASET_SETUP.md) - Dataset configuration
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common issues
 
-**Features:**
-- Drag & drop image upload
-- Real-time predictions
-- Grad-CAM visualizations (see what the model focuses on)
-- Confusion matrices
-- Model performance metrics
+## Technologies
 
-## 🛠️ Technologies
-
-- **ML/DL:** TensorFlow, Keras
-- **API:** FastAPI
-- **Dashboard:** Streamlit
-- **Deployment:** Docker Compose
-
-## 📝 Training Your Own Models
-
-See [RUN.md](RUN.md) for instructions on training models locally.
-
-## 📄 License
-
-MIT License
+TensorFlow, FastAPI, Streamlit, Docker

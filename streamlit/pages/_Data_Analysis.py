@@ -18,6 +18,14 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.config import get_train_dir, get_test_dir, CLASS_NAMES
 
+# Initialize session state for custom paths
+if "custom_train_path" not in st.session_state:
+    st.session_state.custom_train_path = str(get_train_dir())
+if "custom_test_path" not in st.session_state:
+    st.session_state.custom_test_path = str(get_test_dir())
+if "use_custom_paths" not in st.session_state:
+    st.session_state.use_custom_paths = False
+
 # -----------------------------------------------------------------------------
 # PAGE CONFIG
 # -----------------------------------------------------------------------------
@@ -70,6 +78,16 @@ st.markdown("""
 # -----------------------------------------------------------------------------
 # HELPER FUNCTIONS
 # -----------------------------------------------------------------------------
+def get_data_paths():
+    """Get train and test paths based on settings."""
+    if st.session_state.use_custom_paths:
+        train_path = Path(st.session_state.custom_train_path)
+        test_path = Path(st.session_state.custom_test_path)
+    else:
+        train_path = get_train_dir()
+        test_path = get_test_dir()
+    return train_path, test_path
+
 @st.cache_data
 def count_images(directory: Path):
     """Count images in each class directory."""
@@ -147,8 +165,7 @@ def create_pie_chart(counts, title):
 # -----------------------------------------------------------------------------
 # DATA
 # -----------------------------------------------------------------------------
-train_dir = get_train_dir()
-test_dir = get_test_dir()
+train_dir, test_dir = get_data_paths()
 
 train_counts = count_images(train_dir)
 test_counts = count_images(test_dir)
@@ -181,6 +198,12 @@ with st.sidebar:
 # -----------------------------------------------------------------------------
 st.markdown('<h1 class="page-title">📈 Data Analysis</h1>', unsafe_allow_html=True)
 st.markdown("Explore the Intel Image Classification dataset statistics.")
+
+# Settings link
+if st.session_state.use_custom_paths:
+    st.info(f"📁 Using custom paths. [Change in Settings](/_Settings)")
+else:
+    st.info(f"📁 Using default paths. [Configure custom paths in Settings](/_Settings)")
 
 # Stats row
 col1, col2, col3, col4 = st.columns(4)

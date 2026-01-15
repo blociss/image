@@ -1,5 +1,31 @@
+# Docker Compose Configuration
+# ============================
+# 
+# DATASET CONFIGURATION:
+# By default, this uses the local ./data folder.
+# To use a dataset from ANY folder on your computer, set DATASET_PATH.
+#
+# Examples:
+#   DATASET_PATH=/home/user/Downloads/intel_images docker compose up --build
+#
+# PERMISSIONS FIX (for feedback.csv writing):
+# Run with your user ID to avoid permission errors:
+#   HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build
+#
+# Or create a .env file next to this docker-compose.yml:
+#   HOST_UID=1001
+#   HOST_GID=1001
+#   DATASET_PATH=/home/user/Downloads/intel_images
+#
+# Inside the containers, the dataset will be available at:
+#   /app/data
+# so in Streamlit Settings use:
+#   - /app/data/train
+#   - /app/data/test
+
 services:
   api:
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     build:
       context: .
       dockerfile: Dockerfile
@@ -7,9 +33,12 @@ services:
       - "8000:8000"
     volumes:
       - ./outputs:/app/outputs
-      - ./data:/app/data
+      - ${DATASET_PATH:-./data}:/app/data
     environment:
       - TF_CPP_MIN_LOG_LEVEL=2
+      - HOME=/tmp
+      - XDG_CONFIG_HOME=/tmp/.config
+      - MPLCONFIGDIR=/tmp/matplotlib
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=2).read()"]
       interval: 10s
@@ -19,6 +48,7 @@ services:
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000
 
   streamlit:
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     build:
       context: .
       dockerfile: Dockerfile
@@ -26,10 +56,14 @@ services:
       - "8501:8501"
     volumes:
       - ./outputs:/app/outputs
+      - ${DATASET_PATH:-./data}:/app/data
     depends_on:
       api:
         condition: service_healthy
     environment:
       - API_URL=http://api:8000
+      - HOME=/tmp
+      - XDG_CONFIG_HOME=/tmp/.config
+      - STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
     restart: unless-stopped
     command: streamlit run streamlit/app.py --server.port 8501 --server.address 0.0.0.0
