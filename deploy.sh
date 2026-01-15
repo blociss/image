@@ -16,7 +16,7 @@
 set -e
 
 # Configuration
-GITHUB_USERNAME="blociss"
+GITHUB_USERNAME="${GITHUB_USERNAME:-YOUR_USERNAME}"
 API_IMAGE="ghcr.io/${GITHUB_USERNAME}/image-classification-api:latest"
 STREAMLIT_IMAGE="ghcr.io/${GITHUB_USERNAME}/image-classification-streamlit:latest"
 COMPOSE_FILE="docker-compose.ghcr.yml"
@@ -253,6 +253,11 @@ show_help() {
     echo "  - Docker and Docker Compose installed"
     echo "  - GitHub token with packages permissions (for build)"
     echo "  - Dataset in data/train and data/test folders"
+    echo ""
+    echo "⚙️ CONFIGURATION:"
+    echo "  Set GITHUB_USERNAME environment variable:"
+    echo "    export GITHUB_USERNAME=yourusername"
+    echo "    ./deploy.sh build"
     echo ""
     echo "📚 DOCUMENTATION:"
     echo "  - DEPLOY.md - Complete deployment guide"

@@ -11,6 +11,10 @@ CNN-based image classification with FastAPI backend and Streamlit dashboard.
 
 **Easiest - GitHub Container Registry (any OS):**
 ```bash
+# Setup your username (one time)
+./setup.sh
+
+# Deploy
 ./deploy.sh run
 ```
 

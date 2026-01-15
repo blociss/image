@@ -16,6 +16,9 @@ Build images locally from source.
 ## 1️⃣ GitHub Container Registry
 
 ```bash
+# Set your username
+export GITHUB_USERNAME=yourusername
+
 # Quick start
 ./deploy.sh run
 

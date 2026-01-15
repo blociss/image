@@ -44,7 +44,11 @@ DATASET_PATH=/path/to/dataset ./deploy.sh run
 
 ### Login to GitHub Container Registry
 ```bash
-echo "YOUR_GITHUB_TOKEN" | docker login ghcr.io -u blociss --password-stdin
+# Set your username
+export GITHUB_USERNAME=yourusername
+
+# Login with your token
+echo "YOUR_GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_USERNAME --password-stdin
 ```
 
 ### Build and Push
@@ -57,13 +61,13 @@ echo "YOUR_GITHUB_TOKEN" | docker login ghcr.io -u blociss --password-stdin
 # Build images
 docker compose build
 
-# Tag for GHCR
-docker tag image-api:latest ghcr.io/blociss/image-classification-api:latest
-docker tag image-streamlit:latest ghcr.io/blociss/image-classification-streamlit:latest
+# Tag for GHCR (replace with your username)
+docker tag image-api:latest ghcr.io/$GITHUB_USERNAME/image-classification-api:latest
+docker tag image-streamlit:latest ghcr.io/$GITHUB_USERNAME/image-classification-streamlit:latest
 
 # Push to GHCR
-docker push ghcr.io/blociss/image-classification-api:latest
-docker push ghcr.io/blociss/image-classification-streamlit:latest
+docker push ghcr.io/$GITHUB_USERNAME/image-classification-api:latest
+docker push ghcr.io/$GITHUB_USERNAME/image-classification-streamlit:latest
 ```
 
 ---
@@ -111,7 +115,8 @@ DATASET_PATH=/path/to/dataset
 
 ### Images Not Pulling
 ```bash
-docker login ghcr.io -u blociss --password-stdin
+export GITHUB_USERNAME=yourusername
+docker login ghcr.io -u $GITHUB_USERNAME --password-stdin
 ```
 
 ### Containers Not Starting
